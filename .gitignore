@@ -1,0 +1,37 @@
+# ---- ESP-IDF 构建产物 ----
+build/
+sdkconfig.old
+managed_components/
+
+# ---- Node 依赖（由 package.json + package-lock.json 复现）----
+node_modules/
+
+# ---- 抓取的网页样本 ----
+# 这些文件是书源页面的原始快照，含受版权保护的小说正文，不纳入版本管理。
+# 需要运行 web_html_selftest / book_source_probe 时，请使用 tools/fixtures/
+# 下的合成样本，或自行抓取页面。
+index.html
+chap.html
+list.html
+txt.html
+txt80.html
+txt1000.html
+ppptxt.html
+down.txt
+down_headers.txt
+
+# ---- 字体构建中间产物 ----
+dump_test/
+__pycache__/
+*.pyc
+
+# ---- 参赛申报材料，不公开 ----
+deliverables/
+.qa/
+tools/serve_novel.py
+
+# ---- 编辑器与系统 ----
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
