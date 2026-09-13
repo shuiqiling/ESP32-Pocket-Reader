@@ -585,4 +585,3 @@ Persistent Reading State
 | --- | --- |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | 环境搭建、构建烧录、主机测试、字体重建、新增书源 |
 | [`HANDOFF.md`](HANDOFF.md) | 实现现状、逐次真机验收记录、文档与代码偏差清单 |
-| [`PROJECT_REVIEW.md`](PROJECT_REVIEW.md) | 自审记录：历次问题整改与基线评分 |

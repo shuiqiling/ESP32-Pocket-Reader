@@ -34,6 +34,25 @@
 idf.py --version
 ```
 
+### 常见问题
+
+**`export.bat` 报 “This .bat file is for Windows CMD.EXE shell only”**
+说明它被从 Git Bash / MSYS 环境里调用了（`MSYSTEM` 已设置）。要么改用 PowerShell，要么先清掉 `MSYSTEM`：
+
+```bash
+MSYSTEM= cmd.exe //c "export.bat && idf.py build"
+```
+
+**`export.bat` 报 Python 虚拟环境不存在，且路径里的版本号和你装的对不上**
+`export.bat` 按 PATH 里第一个 `python` 的版本去拼 venv 目录名，所以系统装了 Python 3.13 而 IDF 的 venv 是 3.11 时，它会去找 `idf5.5_py3.13_env` 并失败。把 IDF 自带的解释器放到 PATH 最前面即可：
+
+```bat
+set PATH=D:\esp\Espressif\tools\idf-python\3.11.2;%PATH%
+call D:\esp\esp-idf\v5.5.4\esp-idf\export.bat
+```
+
+（把版本号和路径换成 `%IDF_TOOLS_PATH%\tools\idf-python\` 下实际存在的那个。）
+
 ---
 
 ## 2. 构建与烧录

@@ -1,8 +1,9 @@
 // Build a custom LVGL font that covers all characters currently present in spiffs_data.
-// Usage:
-//   cd D:\lvgl
+// Usage (from the repository root):
 //   npm install lv_font_conv@1.5.3
 //   node tools/build_font.js
+//
+// Source font selection and licensing: see the FONT_CANDIDATES comment below.
 const fs = require('fs');
 const path = require('path');
 const convert = require('../node_modules/lv_font_conv/lib/convert');

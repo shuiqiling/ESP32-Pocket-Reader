@@ -33,6 +33,7 @@ deliverables/
 .qa/
 tools/serve_novel.py
 tools/create_project_plan.py
+PROJECT_REVIEW.md
 
 # ---- 编辑器与系统 ----
 .vscode/
