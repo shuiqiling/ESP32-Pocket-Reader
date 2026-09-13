@@ -6,19 +6,22 @@ managed_components/
 # ---- Node 依赖（由 package.json + package-lock.json 复现）----
 node_modules/
 
-# ---- 抓取的网页样本 ----
+# ---- 抓取的网页样本（仅仓库根目录）----
 # 这些文件是书源页面的原始快照，含受版权保护的小说正文，不纳入版本管理。
 # 需要运行 web_html_selftest / book_source_probe 时，请使用 tools/fixtures/
-# 下的合成样本，或自行抓取页面。
-index.html
-chap.html
-list.html
-txt.html
-txt80.html
-txt1000.html
-ppptxt.html
-down.txt
-down_headers.txt
+# 下的合成样本，或自行抓取页面到该目录之外。
+#
+# 必须用前导 / 锚定到仓库根：tools/fixtures/index.html 等合成样本要入库，
+# 否则新克隆的仓库跑不了 web_html_selftest。
+/index.html
+/chap.html
+/list.html
+/txt.html
+/txt80.html
+/txt1000.html
+/ppptxt.html
+/down.txt
+/down_headers.txt
 
 # ---- 字体构建中间产物 ----
 dump_test/
@@ -29,6 +32,7 @@ __pycache__/
 deliverables/
 .qa/
 tools/serve_novel.py
+tools/create_project_plan.py
 
 # ---- 编辑器与系统 ----
 .vscode/

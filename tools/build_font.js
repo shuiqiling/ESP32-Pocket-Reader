@@ -74,6 +74,38 @@ function collectSymbols() {
     return Array.from(chars).join('');
 }
 
+// The generated font embeds glyph outlines, so the source font must be one we
+// are allowed to redistribute. SimHei / Microsoft YaHei ship with Windows and
+// their licences forbid redistribution -- do not use them for a public build.
+// Noto Sans SC is the Google Fonts release of Source Han Sans (思源黑体); both
+// are SIL Open Font License 1.1, which permits redistribution. Medium weight is
+// preferred because 1bpp rendering at 16 px drops strokes from lighter weights.
+const FONT_CANDIDATES = [
+    process.env.FONT_SOURCE,
+    'C:/Windows/Fonts/Noto Sans SC Medium (TrueType).otf',
+    'C:/Windows/Fonts/Noto Sans SC (TrueType).otf',
+    'C:/Windows/Fonts/NotoSansSC-VF.ttf',
+    '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+    '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+].filter(Boolean);
+
+function resolveFontSource()
+{
+    for (const candidate of FONT_CANDIDATES) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    console.error('No usable source font found. Looked for:');
+    for (const candidate of FONT_CANDIDATES) {
+        console.error(`  ${candidate}`);
+    }
+    console.error('\nSet FONT_SOURCE to an OFL-licensed CJK font (Noto Sans SC,');
+    console.error('Source Han Sans, ...) and run again. Do not use simhei.ttf or');
+    console.error('msyh.ttc -- their licences forbid redistributing derived glyphs.');
+    process.exit(1);
+}
+
 async function main() {
     if (!fs.existsSync(path.join(root, 'node_modules', 'lv_font_conv'))) {
         console.error('lv_font_conv is not installed. Run: npm install lv_font_conv@1.5.3');
@@ -82,8 +114,8 @@ async function main() {
 
     const symbols = collectSymbols();
     console.log(`Symbol count: ${Array.from(symbols).length}`);
-    // SimHei covers all common Chinese characters.
-    const fontSource = process.env.FONT_SOURCE || 'C:/Windows/Fonts/simhei.ttf';
+    const fontSource = resolveFontSource();
+    console.log(`Font source: ${fontSource}`);
     const output = path.join(root, 'main', 'fonts', 'novel_font_16.c');
 
     const args = {

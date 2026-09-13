@@ -25,8 +25,14 @@ int main(void)
     int failed = 0;
     size_t len = 0;
 
-    char *idx = read_file("index.html", &len);
-    if (!idx) { fprintf(stderr, "cannot read index.html\n"); return 1; }
+    /* The repository root is the expected working directory; the real scraped
+     * samples are not shipped, so the on-disk cases use the synthetic
+     * fixtures under tools/fixtures/. */
+    char *idx = read_file("tools/fixtures/index.html", &len);
+    if (!idx) {
+        fprintf(stderr, "cannot read tools/fixtures/index.html\n");
+        return 1;
+    }
     web_html_chapter_t chapters[30];
     int n = web_html_parse_index(idx, len, chapters, 20);
     int page_count = web_html_index_page_count(idx, len);
@@ -39,24 +45,47 @@ int main(void)
         fprintf(stderr, "FAIL: expected 15 index pages, got %d\n", page_count);
         failed++;
     }
-    if (strcmp(chapters[0].path, "/biquge/2/2031/7393038.html") != 0) {
+    if (n > 0 && strcmp(chapters[0].path, "/biquge/2/2031/7393038.html") != 0) {
         fprintf(stderr, "FAIL: first path wrong: %s\n", chapters[0].path); failed++;
     }
-    if (strcmp(chapters[1].path, "/biquge/2/2031/7393039.html") != 0) {
+    if (n > 1 && strcmp(chapters[1].path, "/biquge/2/2031/7393039.html") != 0) {
         fprintf(stderr, "FAIL: second path wrong: %s\n", chapters[1].path); failed++;
+    }
+    if (n > 19 && strcmp(chapters[19].path, "/biquge/2/2031/7393057.html") != 0) {
+        fprintf(stderr, "FAIL: last path wrong: %s\n", chapters[19].path); failed++;
     }
     free(idx);
 
-    char *chap = read_file("chap.html", &len);
-    if (!chap) { fprintf(stderr, "cannot read chap.html\n"); return 1; }
+    char *chap = read_file("tools/fixtures/chap.html", &len);
+    if (!chap) {
+        fprintf(stderr, "cannot read tools/fixtures/chap.html\n");
+        return 1;
+    }
+
+    /* The distractors must really be present in the fixture, otherwise the
+     * "no ad text in the body" check below would pass for the wrong reason. */
+    const char *distractors[] = {
+        "加入书签，方便阅读", "请点击下一页继续阅读", "本章未完",
+    };
+    for (size_t i = 0; i < sizeof(distractors) / sizeof(distractors[0]); i++) {
+        if (!strstr(chap, distractors[i])) {
+            fprintf(stderr, "FAIL: fixture is missing distractor text [%s]\n",
+                    distractors[i]);
+            failed++;
+        }
+    }
 
     char body[20000];
     size_t blen = web_html_extract_body(chap, len, body, sizeof(body));
     printf("body length=%u\n", (unsigned)blen);
     if (blen == 0) { fprintf(stderr, "FAIL: no body\n"); failed++; }
-    const char *expect = "斗罗大陆，天斗帝国西南，法斯诺行省";
+    const char *expect = "本段文字由测试脚本完全虚构";
     if (!strstr(body, expect)) {
         fprintf(stderr, "FAIL: body missing first paragraph\n"); failed++;
+    }
+    if (!strstr(body, "第三段占位文字") || !strstr(body, "最后一段占位文字")) {
+        fprintf(stderr, "FAIL: body lost paragraphs around the dropped ad lines\n");
+        failed++;
     }
     if (strstr(body, "加入书签") || strstr(body, "请点击下一页") || strstr(body, "本章未完")) {
         fprintf(stderr, "FAIL: ad/page-control text leaked into body\n"); failed++;
@@ -76,7 +105,7 @@ int main(void)
     char title[128];
     size_t tlen = web_html_extract_title(chap, len, title, sizeof(title));
     printf("title=[%s] len=%u\n", title, (unsigned)tlen);
-    if (strstr(title, "第一章 斗罗大陆，异界唐三（一）") == NULL) {
+    if (strcmp(title, "第二章 测试标题二") != 0) {
         fprintf(stderr, "FAIL: title extraction\n"); failed++;
     }
 

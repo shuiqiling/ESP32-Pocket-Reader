@@ -25,7 +25,7 @@
 | TF 卡 | 板载卡槽，SPI3，实测 32GB FAT32 可挂载 |
 | Flash | 4MB |
 | WiFi | ESP32 内置 2.4G WiFi |
-| USB 串口 | CH340，本轮烧录端口为 **COM8** |
+| USB 串口 | CH340（串口号随 USB 重枚举变化，以设备管理器为准） |
 
 ### 关键引脚
 
@@ -62,7 +62,7 @@ ESP-IDF v5.5.4
 TXT80 同时存在 GBK 和 UTF-8 文件，`gbk_codec.c` 在首个数据块判断编码，并把 GBK 流式转成 UTF-8 后保存；完整 CP936 映射表常驻 Flash，不占用大块运行内存。
 ```
 
-工程目录：`D:\lvgl`
+仓库根目录即工程目录，直接用 ESP-IDF 在该目录下构建。
 
 主要源码：
 
@@ -79,10 +79,12 @@ TXT80 同时存在 GBK 和 UTF-8 文件，`gbk_codec.c` 在首个数据块判断
 | `main/web_scraper.c` | 低内存 HTTP 获取（明文，不含 TLS）、gzip 校验解压、分页下载和原子写盘 |
 | `main/web_html.c` | 搜索、书籍详情、标题、正文及下一章/同章分页解析 |
 | `main/chapter_cache.c` | 5 章滑动缓存窗口计算 |
-| `main/fonts/novel_font_16.c` | 自动生成的中文字体 |
+| `main/fonts/novel_font_16.c` | 自动生成的中文字体（由 OFL 授权字体生成，见 4.2） |
+| `legacy/wifi_loader.c` | 早期“ESP32 AP + 电脑中转服务器”原型，**不参与编译**，仅作技术记录 |
 | `tools/split_novel.py` | 把本地小说 txt 拆成章节 |
 | `tools/build_font.js` | 根据章节字符生成 LVGL 字体 |
-| `tools/serve_novel.py` | 电脑端局域网小说服务（已不被用户接受，保留备用） |
+| `tools/serve_novel.py` | 电脑端局域网小说服务（已不被用户接受，保留备用；**未纳入仓库**） |
+| `tools/fixtures/` | PC 端解析测试用的合成网页样本 |
 | `spiffs_data/` | SPIFFS 出厂数据目录（当前为空，小说统一保存到 TF 卡） |
 
 ## 4. 当前已完成功能
@@ -97,9 +99,11 @@ TXT80 同时存在 GBK 和 UTF-8 文件，`gbk_codec.c` 在首个数据块判断
 - 章节 ID 索引每章 4 字节，可持续扩展到小说末章。
 
 ### 4.2 中文字体
-- 使用 `simhei.ttf` 生成 LVGL 自定义字体；
-- 当前覆盖约 9050 个简体/常用繁体及 UI 字符，并自动收集 UI 字符串；
+- 使用 OFL 授权的 **Noto Sans SC（Google Fonts 发布的思源黑体，Medium 字重）** 生成 LVGL 自定义字体；
+- 当前覆盖 9037 个简体/常用繁体及 UI 字符，并自动收集 `main/*.c` 字符串中的 UI 用字；
 - 生成参数为 1bpp、无压缩，避免 LVGL 9 字体兼容问题；
+- 源字体路径可用 `FONT_SOURCE` 覆盖，脚本按 Noto Sans SC → 思源黑体顺序自动查找；
+- **不得改用 `simhei.ttf` / `msyh.ttc` 等 Windows 随附商业字体**，其许可不允许再分发衍生字形；仓库中的 `main/fonts/novel_font_16.c` 是可直接分发的生成产物；
 - 如果新增章节含新字，需要重新运行：
   ```bash
   node tools/build_font.js
@@ -223,25 +227,25 @@ gzip 解压
 
 ## 6. 构建与烧录
 
-ESP-IDF 5.5.4 位于：
-```text
-D:\esp\esp-idf\v5.5.4\esp-idf
+本项目在 **ESP-IDF v5.5.4** 上开发验证。先按官方文档安装 IDF，然后在已执行 `export` 的终端里操作：
+
+Windows（PowerShell/CMD）：
+```powershell
+%IDF_PATH%\export.bat
 ```
 
-在 PowerShell/CMD 中设置：
-```powershell
-set IDF_TOOLS_PATH=D:\esp\Espressif
-D:\esp\esp-idf\v5.5.4\esp-idf\export.bat
+Linux / macOS：
+```bash
+. $IDF_PATH/export.sh
 ```
 
 构建/烧录：
-```powershell
-cd D:\lvgl
+```bash
 idf.py build
-idf.py -p COM12 flash
+idf.py -p <PORT> flash monitor
 ```
 
-注意：CH340 串口号可能变化；如果 `COM12` 打不开，先用设备管理器确认当前 COM 号。
+注意：CH340 串口号会随 USB 重枚举变化（本机曾出现 COM8 / COM12 互换），烧录前先用设备管理器或 `ls /dev/ttyUSB*` 确认当前端口。
 
 ## 7. 重要备注
 
@@ -267,8 +271,19 @@ idf.py -p COM12 flash
 - `CONFIG_LV_IME_PINYIN_USE_K9_MODE=y` 仍然开启，但代码只用 K26 模式，属残留配置。
 - `CONFIG_LV_USE_PERF_MONITOR` / `CONFIG_LV_USE_SYSMON` 已开启，代码中没有使用点。
 
-仓库待整理项（当前目录尚未初始化 Git）：
+## 9. 开源整理（2026-09-13）
 
-- `chap.html`、`index.html` 是 `tools/web_html_selftest.c` 的输入样本，建议移入 `tools/fixtures/`。
-- `list.html`、`txt.html`、`txt80.html`、`txt1000.html`、`ppptxt.html`、`down.txt`、`down_headers.txt`、`dump_test/` 当前无任何引用。
-- `book_source_probe` 依赖的 `build/source_*.html` 样本放在生成目录内，`idf.py fullclean` 后会失效，建议一并移入 `tools/fixtures/`。
+仓库已初始化 Git 并整理为可公开发布状态：
+
+| 项目 | 处理 |
+|---|---|
+| 生成字体 | 源字体由 `simhei.ttf` 换为 **Noto Sans SC Medium（OFL）**，重新生成 `main/fonts/novel_font_16.c`（9037 字，2,627,146 字节）；原 SimHei 版本可在 `f676b6d` 中找回 |
+| 网页样本 | 真实抓取的 `index.html` / `chap.html` / `list.html` / `txt*.html` 等全部不纳入版本管理，测试改用 `tools/fixtures/` 下的合成样本 |
+| `wifi_loader` | 已废弃的“AP + 电脑中转”原型移入 `legacy/`，不参与编译 |
+| 参赛材料 | `deliverables/`、`.qa/`、`tools/serve_novel.py` 由 `.gitignore` 排除 |
+| 授权 | 新增 `LICENSE`（MIT）与 README 的授权/免责说明 |
+
+发布前仍待确认：
+
+- `dependencies.lock` 与 `main/idf_component.yml` 的组件版本需与实际构建一致；
+- 无 `build/source_*.html` 时 `book_source_probe` 需改用 `tools/fixtures/` 样本或自行抓取（工具本身不依赖固定文件名）。
